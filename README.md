@@ -1,4 +1,4 @@
-# Coding Agent Harness
+# CodeLoop｜智能编码与自动验收 Harness
 
 面向软件工程任务的 Python Coding Agent 运行时。通过命令行串联代码探索、方案规划、工具执行、变更交付与测试验收。
 
