@@ -1,0 +1,1702 @@
+[
+  {
+    "id": "coupon-normalization",
+    "category": "commerce",
+    "issue": "Return whether a coupon matches. Strip surrounding whitespace from the supplied code and compare case-insensitively using casefold. A missing code returns False.",
+    "entry": "service",
+    "func": "evaluate",
+    "files": {
+      "service": "from rules import check\n\ndef evaluate(*args):\n    return check(*args)\n",
+      "rules": "def check(raw, expected):\n    if raw is None:\n        return False\n    return raw == expected\n"
+    },
+    "reference": {
+      "rules": "def check(raw, expected):\n    if raw is None:\n        return False\n    return raw.strip().casefold() == expected.casefold()\n"
+    },
+    "fault": {
+      "rules": "def check(raw, expected):\n    if raw is None:\n        return False\n    return raw.strip() == expected\n"
+    },
+    "visible": [
+      [
+        [
+          " SAVE ",
+          "SAVE"
+        ],
+        true
+      ],
+      [
+        [
+          "save",
+          "SAVE"
+        ],
+        true
+      ]
+    ],
+    "hidden": [
+      [
+        [
+          " straße ",
+          "STRASSE"
+        ],
+        true
+      ]
+    ],
+    "regression": [
+      [
+        [
+          null,
+          "SAVE"
+        ],
+        false
+      ],
+      [
+        [
+          "other",
+          "SAVE"
+        ],
+        false
+      ]
+    ]
+  },
+  {
+    "id": "exclusive-tier",
+    "category": "commerce",
+    "issue": "Charge 5 cents per unit below 10 units, 3 cents per unit for 10 through 49 units, and 2 cents per unit for 50 units and above. Apply one rate to all units.",
+    "entry": "service",
+    "func": "evaluate",
+    "files": {
+      "service": "from rules import check\n\ndef evaluate(*args):\n    return check(*args)\n",
+      "rules": "def check(units):\n    if units > 50:\n        return 2 * units\n    if units > 10:\n        return 3 * units\n    return 5 * units\n"
+    },
+    "reference": {
+      "rules": "def check(units):\n    if units >= 50:\n        return 2 * units\n    if units >= 10:\n        return 3 * units\n    return 5 * units\n"
+    },
+    "fault": {
+      "rules": "def check(units):\n    if units > 50:\n        return 2 * units\n    if units >= 10:\n        return 3 * units\n    return 5 * units\n"
+    },
+    "visible": [
+      [
+        [
+          10
+        ],
+        30
+      ],
+      [
+        [
+          50
+        ],
+        100
+      ]
+    ],
+    "hidden": [],
+    "regression": [
+      [
+        [
+          9
+        ],
+        45
+      ],
+      [
+        [
+          49
+        ],
+        147
+      ],
+      [
+        [
+          51
+        ],
+        102
+      ]
+    ]
+  },
+  {
+    "id": "reservation-window",
+    "category": "commerce",
+    "issue": "Can a reservation be made? Accept times at opening or later, strictly before closing, and reject a party larger than available seats. Equal times represent a closed window.",
+    "entry": "service",
+    "func": "evaluate",
+    "files": {
+      "service": "from rules import check\n\ndef evaluate(*args):\n    return check(*args)\n",
+      "rules": "def check(now, opening, closing, party, seats):\n    return opening < now <= closing and party <= seats\n"
+    },
+    "reference": {
+      "rules": "def check(now, opening, closing, party, seats):\n    return opening <= now < closing and party <= seats\n"
+    },
+    "fault": {
+        "rules": "def check(now, opening, closing, party, seats):\n    return opening < now < closing and party <= seats\n"
+    },
+    "visible": [
+      [
+        [
+          5,
+          5,
+          10,
+          1,
+          2
+        ],
+        true
+      ],
+      [
+        [
+          10,
+          5,
+          10,
+          1,
+          2
+        ],
+        false
+      ]
+    ],
+    "hidden": [
+      [
+        [
+          5,
+          5,
+          9,
+          2,
+          2
+        ],
+        true
+      ],
+      [
+        [
+          9,
+          5,
+          9,
+          2,
+          2
+        ],
+        false
+      ]
+    ],
+    "regression": [
+      [
+        [
+          7,
+          5,
+          10,
+          3,
+          2
+        ],
+        false
+      ],
+      [
+        [
+          7,
+          5,
+          10,
+          2,
+          2
+        ],
+        true
+      ],
+      [
+        [
+          5,
+          5,
+          5,
+          1,
+          2
+        ],
+        false
+      ]
+    ]
+  },
+  {
+    "id": "refund-status-total",
+    "category": "commerce",
+    "issue": "Sum amounts of settled refunds for the given currency. Status comparison ignores surrounding whitespace, and currency codes are ASCII case-insensitive. Pending refunds must not count.",
+    "entry": "service",
+    "func": "evaluate",
+    "files": {
+      "service": "from rules import check\n\ndef evaluate(*args):\n    return check(*args)\n",
+      "rules": "def check(rows, currency):\n    return sum(amount for status, code, amount in rows\n               if status == \"settled\" and code == currency)\n"
+    },
+    "reference": {
+      "rules": "def check(rows, currency):\n    return sum(amount for status, code, amount in rows\n               if status.strip() == \"settled\" and code.upper() == currency.upper())\n"
+    },
+    "fault": {
+      "rules": "def check(rows, currency):\n    return sum(amount for status, code, amount in rows\n               if status.strip() == \"settled\" and code == currency)\n"
+    },
+    "visible": [
+      [
+        [
+          [
+            [
+              " settled ",
+              "USD",
+              5
+            ]
+          ],
+          "USD"
+        ],
+        5
+      ],
+      [
+        [
+          [
+            [
+              "settled",
+              "usd",
+              7
+            ]
+          ],
+          "USD"
+        ],
+        7
+      ]
+    ],
+    "hidden": [
+      [
+        [
+          [
+            [
+              " settled ",
+              "eur",
+              4
+            ],
+            [
+              "pending",
+              "EUR",
+              9
+            ]
+          ],
+          "EUR"
+        ],
+        4
+      ]
+    ],
+    "regression": [
+      [
+        [
+          [
+            [
+              "pending",
+              "USD",
+              9
+            ],
+            [
+              "settled",
+              "EUR",
+              4
+            ]
+          ],
+          "USD"
+        ],
+        0
+      ],
+      [
+        [
+          [
+            [
+              "settled",
+              "USD",
+              1
+            ]
+          ],
+          "USD"
+        ],
+        1
+      ]
+    ]
+  },
+  {
+    "id": "latest-price",
+    "category": "commerce",
+    "issue": "Return the amount for the newest timestamp. On timestamp ties, the last row wins. An empty history returns the fallback.",
+    "entry": "service",
+    "func": "evaluate",
+    "files": {
+      "service": "from rules import check\n\ndef evaluate(*args):\n    return check(*args)\n",
+      "rules": "def check(rows, fallback):\n    if not rows:\n        return None\n    return max(rows, key=lambda row: row[0])[1]\n"
+    },
+    "reference": {
+      "rules": "def check(rows, fallback):\n    if not rows:\n        return fallback\n    return max(reversed(rows), key=lambda row: row[0])[1]\n"
+    },
+    "fault": {
+      "rules": "def check(rows, fallback):\n    if not rows:\n        return fallback\n    return max(rows, key=lambda row: row[0])[1]\n"
+    },
+    "visible": [
+      [
+        [
+          [],
+          99
+        ],
+        99
+      ],
+      [
+        [
+          [
+            [
+              4,
+              10
+            ],
+            [
+              4,
+              20
+            ]
+          ],
+          99
+        ],
+        20
+      ]
+    ],
+    "hidden": [
+      [
+        [
+          [
+            [
+              9,
+              1
+            ],
+            [
+              2,
+              2
+            ],
+            [
+              9,
+              3
+            ]
+          ],
+          0
+        ],
+        3
+      ]
+    ],
+    "regression": [
+      [
+        [
+          [
+            [
+              4,
+              1
+            ],
+            [
+              6,
+              2
+            ],
+            [
+              5,
+              3
+            ]
+          ],
+          99
+        ],
+        2
+      ]
+    ]
+  },
+  {
+    "id": "http-retryable",
+    "category": "network",
+    "issue": "Retry HTTP 408, 429, and all 5xx responses. Retry only when the number of retries already performed is strictly less than max_retries.",
+    "entry": "service",
+    "func": "evaluate",
+    "files": {
+      "service": "from rules import check\n\ndef evaluate(*args):\n    return check(*args)\n",
+      "rules": "def check(status, retries, max_retries):\n    return retries <= max_retries and (status == 429 or 500 <= status < 600)\n"
+    },
+    "reference": {
+      "rules": "def check(status, retries, max_retries):\n    return retries < max_retries and (status in {408, 429} or 500 <= status < 600)\n"
+    },
+    "fault": {
+      "rules": "def check(status, retries, max_retries):\n    return retries <= max_retries and (status in {408, 429} or 500 <= status < 600)\n"
+    },
+    "visible": [
+      [
+        [
+          408,
+          0,
+          2
+        ],
+        true
+      ],
+      [
+        [
+          503,
+          2,
+          2
+        ],
+        false
+      ]
+    ],
+    "hidden": [
+      [
+        [
+          408,
+          2,
+          3
+        ],
+        true
+      ],
+      [
+        [
+          429,
+          0,
+          0
+        ],
+        false
+      ]
+    ],
+    "regression": [
+      [
+        [
+          502,
+          0,
+          1
+        ],
+        true
+      ],
+      [
+        [
+          200,
+          0,
+          2
+        ],
+        false
+      ],
+      [
+        [
+          600,
+          0,
+          2
+        ],
+        false
+      ]
+    ]
+  },
+  {
+    "id": "header-lookup",
+    "category": "network",
+    "issue": "HTTP header lookup compares ASCII names case-insensitively and returns the last matching value. Return fallback when the name is missing.",
+    "entry": "service",
+    "func": "evaluate",
+    "files": {
+      "service": "from rules import check\n\ndef evaluate(*args):\n    return check(*args)\n",
+      "rules": "def check(headers, wanted, fallback):\n    for key, value in headers:\n        if key == wanted:\n            return value\n    return fallback\n"
+    },
+    "reference": {
+      "rules": "def check(headers, wanted, fallback):\n    for key, value in reversed(headers):\n        if key.lower() == wanted.lower():\n            return value\n    return fallback\n"
+    },
+    "fault": {
+      "rules": "def check(headers, wanted, fallback):\n    for key, value in headers:\n        if key.lower() == wanted.lower():\n            return value\n    return fallback\n"
+    },
+    "visible": [
+      [
+        [
+          [
+            [
+              "X-Id",
+              "abc"
+            ]
+          ],
+          "x-id",
+          "missing"
+        ],
+        "abc"
+      ],
+      [
+        [
+          [
+            [
+              "X",
+              "first"
+            ],
+            [
+              "X",
+              "last"
+            ]
+          ],
+          "X",
+          "missing"
+        ],
+        "last"
+      ]
+    ],
+    "hidden": [
+      [
+        [
+          [
+            [
+              "Y",
+              "one"
+            ],
+            [
+              "y",
+              "two"
+            ]
+          ],
+          "Y",
+          "missing"
+        ],
+        "two"
+      ]
+    ],
+    "regression": [
+      [
+        [
+          [
+            [
+              "Y",
+              "one"
+            ]
+          ],
+          "X",
+          "missing"
+        ],
+        "missing"
+      ],
+      [
+        [
+          [
+            [
+              "Y",
+              "one"
+            ]
+          ],
+          "Y",
+          "missing"
+        ],
+        "one"
+      ]
+    ]
+  },
+  {
+    "id": "path-normalization",
+    "category": "network",
+    "issue": "Build a request path from segments. Trim outer whitespace, discard empty segments after trimming, and percent-encode spaces inside a segment as %20. Inputs contain no literal slash inside segments.",
+    "entry": "service",
+    "func": "evaluate",
+    "files": {
+      "service": "from rules import check\n\ndef evaluate(*args):\n    return check(*args)\n",
+      "rules": "def check(segments):\n    return \"/\" + \"/\".join(segment for segment in segments if segment)\n"
+    },
+    "reference": {
+      "rules": "def check(segments):\n    return \"/\" + \"/\".join(segment.strip().replace(' ', '%20') for segment in segments if segment.strip())\n"
+    },
+    "fault": {
+      "rules": "def check(segments):\n    return \"/\" + \"/\".join(segment.strip() for segment in segments if segment.strip())\n"
+    },
+    "visible": [
+      [
+        [
+          [
+            " api ",
+            " ",
+            "v1"
+          ]
+        ],
+        "/api/v1"
+      ],
+      [
+        [
+          [
+            "two words"
+          ]
+        ],
+        "/two%20words"
+      ]
+    ],
+    "hidden": [
+      [
+        [
+          [
+            " ",
+            " a b ",
+            "c"
+          ]
+        ],
+        "/a%20b/c"
+      ]
+    ],
+    "regression": [
+      [
+        [
+          []
+        ],
+        "/"
+      ],
+      [
+        [
+          [
+            "api",
+            "v1"
+          ]
+        ],
+        "/api/v1"
+      ]
+    ]
+  },
+  {
+    "id": "protocol-negotiation",
+    "category": "network",
+    "issue": "Choose the first client preference supported by the server. Compare protocol identifiers case-insensitively, return the client's original spelling, and return None when no match exists.",
+    "entry": "service",
+    "func": "evaluate",
+    "files": {
+      "service": "from rules import check\n\ndef evaluate(*args):\n    return check(*args)\n",
+      "rules": "def check(preferred, available):\n    for name in reversed(preferred):\n        if name in available:\n            return name\n    return None\n"
+    },
+    "reference": {
+      "rules": "def check(preferred, available):\n    for name in preferred:\n        if name.lower() in {item.lower() for item in available}:\n            return name\n    return None\n"
+    },
+    "fault": {
+      "rules": "def check(preferred, available):\n    for name in preferred:\n        if name in available:\n            return name\n    return None\n"
+    },
+    "visible": [
+      [
+        [
+          [
+            "http3",
+            "http2"
+          ],
+          [
+            "http2",
+            "http3"
+          ]
+        ],
+        "http3"
+      ],
+      [
+        [
+          [
+            "H2"
+          ],
+          [
+            "h2"
+          ]
+        ],
+        "H2"
+      ]
+    ],
+    "hidden": [
+      [
+        [
+          [
+            "A",
+            "B"
+          ],
+          [
+            "b",
+            "a"
+          ]
+        ],
+        "A"
+      ]
+    ],
+    "regression": [
+      [
+        [
+          [
+            "x"
+          ],
+          [
+            "y"
+          ]
+        ],
+        null
+      ],
+      [
+        [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "b"
+      ]
+    ]
+  },
+  {
+    "id": "deduplicated-events",
+    "category": "network",
+    "issue": "Filter disabled or stale events, then return the first remaining row for each ID in input order. An event at the cutoff is current. Disabled rows must never reserve an ID.",
+    "entry": "service",
+    "func": "evaluate",
+    "files": {
+      "service": "from rules import check\n\ndef evaluate(*args):\n    return check(*args)\n",
+      "rules": "def check(rows, cutoff):\n    seen = set()\n    result = []\n    for key, timestamp, enabled in rows:\n        if key in seen or timestamp <= cutoff:\n            continue\n        seen.add(key)\n        result.append(key)\n    return result\n"
+    },
+    "reference": {
+      "rules": "def check(rows, cutoff):\n    seen = set()\n    result = []\n    for key, timestamp, enabled in rows:\n        if not enabled or key in seen or timestamp < cutoff:\n            continue\n        seen.add(key)\n        result.append(key)\n    return result\n"
+    },
+    "fault": {
+      "rules": "def check(rows, cutoff):\n    seen = set()\n    result = []\n    for key, timestamp, enabled in rows:\n        if not enabled or key in seen or timestamp <= cutoff:\n            continue\n        seen.add(key)\n        result.append(key)\n    return result\n"
+    },
+    "visible": [
+      [
+        [
+          [
+            [
+              "old",
+              4,
+              false
+            ],
+            [
+              "new",
+              5,
+              true
+            ]
+          ],
+          2
+        ],
+        [
+          "new"
+        ]
+      ],
+      [
+        [
+          [
+            [
+              "edge",
+              4,
+              true
+            ]
+          ],
+          4
+        ],
+        [
+          "edge"
+        ]
+      ]
+    ],
+    "hidden": [
+      [
+        [
+          [
+            [
+              "a",
+              5,
+              false
+            ],
+            [
+              "a",
+              5,
+              true
+            ],
+            [
+              "b",
+              4,
+              true
+            ]
+          ],
+          4
+        ],
+        [
+          "a",
+          "b"
+        ]
+      ]
+    ],
+    "regression": [
+      [
+        [
+          [
+            [
+              "a",
+              7,
+              true
+            ],
+            [
+              "a",
+              8,
+              true
+            ],
+            [
+              "b",
+              1,
+              true
+            ]
+          ],
+          2
+        ],
+        [
+          "a"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "csv-comments",
+    "category": "data",
+    "issue": "Read nonempty lines, trim surrounding whitespace, skip lines whose first non-whitespace character is #, and split each retained line once at the first comma. Lines without a comma are ignored.",
+    "entry": "service",
+    "func": "evaluate",
+    "files": {
+      "service": "from rules import check\n\ndef evaluate(*args):\n    return check(*args)\n",
+      "rules": "def check(text):\n    rows = []\n    for line in text.splitlines():\n        line = line.strip()\n        if not line or \",\" not in line:\n            continue\n        rows.append(line.split(\",\"))\n    return rows\n"
+    },
+    "reference": {
+      "rules": "def check(text):\n    rows = []\n    for line in text.splitlines():\n        line = line.strip()\n        if not line or line.startswith('#') or \",\" not in line:\n            continue\n        rows.append(line.split(\",\", 1))\n    return rows\n"
+    },
+    "fault": {
+      "rules": "def check(text):\n    rows = []\n    for line in text.splitlines():\n        line = line.strip()\n        if not line or line.startswith('#') or \",\" not in line:\n            continue\n        rows.append(line.split(\",\"))\n    return rows\n"
+    },
+    "visible": [
+      [
+        [
+          "# ignored,comment\na,b"
+        ],
+        [
+          [
+            "a",
+            "b"
+          ]
+        ]
+      ],
+      [
+        [
+          "a,b,c"
+        ],
+        [
+          [
+            "a",
+            "b,c"
+          ]
+        ]
+      ]
+    ],
+    "hidden": [
+      [
+        [
+          "#ignore,one,two\nx,y,z"
+        ],
+        [
+          [
+            "x",
+            "y,z"
+          ]
+        ]
+      ]
+    ],
+    "regression": [
+      [
+        [
+          "a,b\nempty\n c,d "
+        ],
+        [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "c",
+            "d"
+          ]
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "series-delta",
+    "category": "data",
+    "issue": "Return changes between successive non-missing values, in order. None represents a missing reading. Zero is valid. A series with fewer than two readings has no deltas.",
+    "entry": "service",
+    "func": "evaluate",
+    "files": {
+      "service": "from rules import check\n\ndef evaluate(*args):\n    return check(*args)\n",
+      "rules": "def check(values):\n    cleaned = [value for value in values if value]\n    return [a - b for a, b in zip(cleaned, cleaned[1:])]\n"
+    },
+    "reference": {
+      "rules": "def check(values):\n    cleaned = [value for value in values if value is not None]\n    return [b - a for a, b in zip(cleaned, cleaned[1:])]\n"
+    },
+    "fault": {
+      "rules": "def check(values):\n    cleaned = [value for value in values if value is not None]\n    return [a - b for a, b in zip(cleaned, cleaned[1:])]\n"
+    },
+    "visible": [
+      [
+        [
+          [
+            0,
+            0
+          ]
+        ],
+        [
+          0
+        ]
+      ],
+      [
+        [
+          [
+            5,
+            2
+          ]
+        ],
+        [
+          -3
+        ]
+      ]
+    ],
+    "hidden": [
+      [
+        [
+          [
+            1,
+            null,
+            0,
+            4
+          ]
+        ],
+        [
+          -1,
+          4
+        ]
+      ]
+    ],
+    "regression": [
+      [
+        [
+          [
+            null
+          ]
+        ],
+        []
+      ],
+      [
+        [
+          [
+            7,
+            7
+          ]
+        ],
+        [
+          0
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "group-average",
+    "category": "data",
+    "issue": "Compute each key's arithmetic mean of all readings for that key. Normalize key whitespace, preserve case, and include zero values.",
+    "entry": "service",
+    "func": "evaluate",
+    "files": {
+      "service": "from rules import check\n\ndef evaluate(*args):\n    return check(*args)\n",
+      "rules": "def check(rows):\n    buckets = {}\n    for key, value in rows:\n        if value:\n            buckets.setdefault(key, []).append(value)\n    return {key: sum(values) / len(values) for key, values in buckets.items()}\n"
+    },
+    "reference": {
+      "rules": "def check(rows):\n    buckets = {}\n    for key, value in rows:\n        buckets.setdefault(key.strip(), []).append(value)\n    return {key: sum(values) / len(values) for key, values in buckets.items()}\n"
+    },
+    "fault": {
+      "rules": "def check(rows):\n    buckets = {}\n    for key, value in rows:\n        if value:\n            buckets.setdefault(key.strip(), []).append(value)\n    return {key: sum(values) / len(values) for key, values in buckets.items()}\n"
+    },
+    "visible": [
+      [
+        [
+          [
+            [
+              " a",
+              2
+            ],
+            [
+              "a ",
+              4
+            ]
+          ]
+        ],
+        {
+          "a": 3
+        }
+      ],
+      [
+        [
+          [
+            [
+              "a",
+              4
+            ],
+            [
+              "a",
+              0
+            ]
+          ]
+        ],
+        {
+          "a": 2
+        }
+      ]
+    ],
+    "hidden": [
+      [
+        [
+          [
+            [
+              " a ",
+              0
+            ],
+            [
+              "a",
+              8
+            ]
+          ]
+        ],
+        {
+          "a": 4
+        }
+      ]
+    ],
+    "regression": [
+      [
+        [
+          [
+            [
+              "a",
+              3
+            ],
+            [
+              "A",
+              5
+            ]
+          ]
+        ],
+        {
+          "a": 3,
+          "A": 5
+        }
+      ],
+      [
+        [
+          []
+        ],
+        {}
+      ]
+    ]
+  },
+  {
+    "id": "top-k-ties",
+    "category": "data",
+    "issue": "Return up to k item names ranked by descending score. Break score ties by ascending name. For k <= 0 return an empty list.",
+    "entry": "service",
+    "func": "evaluate",
+    "files": {
+      "service": "from rules import check\n\ndef evaluate(*args):\n    return check(*args)\n",
+      "rules": "def check(rows, k):\n    ranked = sorted(rows, key=lambda row: row[1], reverse=True)\n    return [name for name, _ in ranked[:k]]\n"
+    },
+    "reference": {
+      "rules": "def check(rows, k):\n    ranked = sorted(rows, key=lambda row: (-row[1], row[0]))\n    return [name for name, _ in ranked[:max(0, k)]]\n"
+    },
+    "fault": {
+      "rules": "def check(rows, k):\n    ranked = sorted(rows, key=lambda row: (-row[1], row[0]))\n    return [name for name, _ in ranked[:k]]\n"
+    },
+    "visible": [
+      [
+        [
+          [
+            [
+              "z",
+              7
+            ],
+            [
+              "a",
+              7
+            ]
+          ],
+          1
+        ],
+        [
+          "a"
+        ]
+      ],
+      [
+        [
+          [
+            [
+              "a",
+              7
+            ],
+            [
+              "z",
+              4
+            ]
+          ],
+          -1
+        ],
+        []
+      ]
+    ],
+    "hidden": [
+      [
+        [
+          [
+            [
+              "b",
+              3
+            ],
+            [
+              "c",
+              5
+            ],
+            [
+              "a",
+              3
+            ]
+          ],
+          3
+        ],
+        [
+          "c",
+          "a",
+          "b"
+        ]
+      ]
+    ],
+    "regression": [
+      [
+        [
+          [
+            [
+              "a",
+              1
+            ],
+            [
+              "b",
+              2
+            ]
+          ],
+          1
+        ],
+        [
+          "b"
+        ]
+      ],
+      [
+        [
+          [],
+          3
+        ],
+        []
+      ]
+    ]
+  },
+  {
+    "id": "diff-normalization",
+    "category": "data",
+    "issue": "Report names present in the new list but absent from the old one. Match trimmed names case-insensitively, and return first new spelling trimmed once for each new name.",
+    "entry": "service",
+    "func": "evaluate",
+    "files": {
+      "service": "from rules import check\n\ndef evaluate(*args):\n    return check(*args)\n",
+      "rules": "def check(old, new):\n    existing = {item.strip() for item in old}\n    added = []\n    for raw in new:\n        item = raw.strip()\n        if item not in existing:\n            added.append(item)\n    return added\n"
+    },
+    "reference": {
+      "rules": "def check(old, new):\n    existing = {item.strip().casefold() for item in old}\n    added = []\n    for raw in new:\n        item = raw.strip()\n        if item.casefold() not in existing:\n            existing.add(item.casefold())\n            added.append(item)\n    return added\n"
+    },
+    "fault": {
+      "rules": "def check(old, new):\n    existing = {item.strip().casefold() for item in old}\n    added = []\n    for raw in new:\n        item = raw.strip()\n        if item.casefold() not in existing:\n            added.append(item)\n    return added\n"
+    },
+    "visible": [
+      [
+        [
+          [
+            "old"
+          ],
+          [
+            "OLD",
+            "new"
+          ]
+        ],
+        [
+          "new"
+        ]
+      ],
+      [
+        [
+          [],
+          [
+            " new ",
+            "new"
+          ]
+        ],
+        [
+          "new"
+        ]
+      ]
+    ],
+    "hidden": [
+      [
+        [
+          [
+            "OLD "
+          ],
+          [
+            "old",
+            " X ",
+            "x"
+          ]
+        ],
+        [
+          "X"
+        ]
+      ]
+    ],
+    "regression": [
+      [
+        [
+          [
+            "a"
+          ],
+          [
+            "a",
+            "b"
+          ]
+        ],
+        [
+          "b"
+        ]
+      ],
+      [
+        [
+          [],
+          []
+        ],
+        []
+      ]
+    ]
+  },
+  {
+    "id": "non-overlap",
+    "category": "workflow",
+    "issue": "Two nonempty half-open intervals overlap only if they share at least one point. Equal or inverted endpoints represent an empty interval. Adjacent intervals do not overlap.",
+    "entry": "service",
+    "func": "evaluate",
+    "files": {
+      "service": "from rules import check\n\ndef evaluate(*args):\n    return check(*args)\n",
+      "rules": "def check(a_start, a_end, b_start, b_end):\n    return a_start <= b_end and b_start <= a_end\n"
+    },
+    "reference": {
+      "rules": "def check(a_start, a_end, b_start, b_end):\n    return a_start < a_end and b_start < b_end and a_start < b_end and b_start < a_end\n"
+    },
+    "fault": {
+      "rules": "def check(a_start, a_end, b_start, b_end):\n    return a_start < b_end and b_start < a_end\n"
+    },
+    "visible": [
+      [
+        [
+          0,
+          3,
+          3,
+          6
+        ],
+        false
+      ],
+      [
+        [
+          2,
+          2,
+          0,
+          4
+        ],
+        false
+      ]
+    ],
+    "hidden": [
+      [
+        [
+          4,
+          4,
+          1,
+          7
+        ],
+        false
+      ],
+      [
+        [
+          3,
+          6,
+          0,
+          3
+        ],
+        false
+      ]
+    ],
+    "regression": [
+      [
+        [
+          1,
+          4,
+          3,
+          6
+        ],
+        true
+      ],
+      [
+        [
+          1,
+          2,
+          3,
+          4
+        ],
+        false
+      ],
+      [
+        [
+          5,
+          2,
+          0,
+          1
+        ],
+        false
+      ]
+    ]
+  },
+  {
+    "id": "role-effective",
+    "category": "workflow",
+    "issue": "Return allowed actions in alphabetical order. Ignore duplicate actions and remove any explicitly denied action. Deny wins regardless of list order.",
+    "entry": "service",
+    "func": "evaluate",
+    "files": {
+      "service": "from rules import check\n\ndef evaluate(*args):\n    return check(*args)\n",
+      "rules": "def check(allowed, denied):\n    return sorted(action for action in allowed if action not in denied or action == \"write\")\n"
+    },
+    "reference": {
+      "rules": "def check(allowed, denied):\n    return sorted({action for action in allowed if action not in denied})\n"
+    },
+    "fault": {
+      "rules": "def check(allowed, denied):\n    return sorted(action for action in allowed if action not in denied)\n"
+    },
+    "visible": [
+      [
+        [
+          [
+            "read",
+            "write"
+          ],
+          [
+            "write"
+          ]
+        ],
+        [
+          "read"
+        ]
+      ],
+      [
+        [
+          [
+            "read",
+            "read"
+          ],
+          []
+        ],
+        [
+          "read"
+        ]
+      ]
+    ],
+    "hidden": [
+      [
+        [
+          [
+            "x",
+            "write",
+            "x"
+          ],
+          [
+            "write"
+          ]
+        ],
+        [
+          "x"
+        ]
+      ]
+    ],
+    "regression": [
+      [
+        [
+          [
+            "z",
+            "a"
+          ],
+          []
+        ],
+        [
+          "a",
+          "z"
+        ]
+      ],
+      [
+        [
+          [],
+          [
+            "x"
+          ]
+        ],
+        []
+      ]
+    ]
+  },
+  {
+    "id": "job-ready",
+    "category": "workflow",
+    "issue": "A queued job may start only when all dependency IDs are completed and the current time is at or after ready_at. Empty dependency lists are satisfied.",
+    "entry": "service",
+    "func": "evaluate",
+    "files": {
+      "service": "from rules import check\n\ndef evaluate(*args):\n    return check(*args)\n",
+      "rules": "def check(dependencies, completed, now, ready_at):\n    return any(dep in completed for dep in dependencies) and now > ready_at\n"
+    },
+    "reference": {
+      "rules": "def check(dependencies, completed, now, ready_at):\n    return all(dep in completed for dep in dependencies) and now >= ready_at\n"
+    },
+    "fault": {
+      "rules": "def check(dependencies, completed, now, ready_at):\n    return all(dep in completed for dep in dependencies) and now > ready_at\n"
+    },
+    "visible": [
+      [
+        [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "a"
+          ],
+          4,
+          1
+        ],
+        false
+      ],
+      [
+        [
+          [
+            "a"
+          ],
+          [
+            "a"
+          ],
+          2,
+          2
+        ],
+        true
+      ]
+    ],
+    "hidden": [
+      [
+        [
+          [],
+          [],
+          3,
+          3
+        ],
+        true
+      ]
+    ],
+    "regression": [
+      [
+        [
+          [
+            "a"
+          ],
+          [
+            "a"
+          ],
+          4,
+          2
+        ],
+        true
+      ],
+      [
+        [
+          [
+            "a"
+          ],
+          [
+            "a"
+          ],
+          1,
+          2
+        ],
+        false
+      ]
+    ]
+  },
+  {
+    "id": "business-day-mask",
+    "category": "workflow",
+    "issue": "Select weekday numbers from the input list, preserving order and duplicates. Weekdays are numbered Monday=0 through Friday=4. Ignore all numbers outside that range.",
+    "entry": "service",
+    "func": "evaluate",
+    "files": {
+      "service": "from rules import check\n\ndef evaluate(*args):\n    return check(*args)\n",
+      "rules": "def check(days):\n    return [day for day in days if day > 0 and day <= 5]\n"
+    },
+    "reference": {
+      "rules": "def check(days):\n    return [day for day in days if day >= 0 and day <= 4]\n"
+    },
+    "fault": {
+      "rules": "def check(days):\n    return [day for day in days if day >= 0 and day <= 5]\n"
+    },
+    "visible": [
+      [
+        [
+          [
+            0,
+            2
+          ]
+        ],
+        [
+          0,
+          2
+        ]
+      ],
+      [
+        [
+          [
+            5,
+            3
+          ]
+        ],
+        [
+          3
+        ]
+      ]
+    ],
+    "hidden": [
+      [
+        [
+          [
+            0,
+            5,
+            4,
+            0
+          ]
+        ],
+        [
+          0,
+          4,
+          0
+        ]
+      ]
+    ],
+    "regression": [
+      [
+        [
+          [
+            1,
+            6,
+            -1,
+            4
+          ]
+        ],
+        [
+          1,
+          4
+        ]
+      ],
+      [
+        [
+          []
+        ],
+        []
+      ]
+    ]
+  },
+  {
+    "id": "notification-due",
+    "category": "workflow",
+    "issue": "Return IDs of unread notifications due at or before now. Preserve order. Ignore entries with no due time. Time zero is a valid due time.",
+    "entry": "service",
+    "func": "evaluate",
+    "files": {
+      "service": "from rules import check\n\ndef evaluate(*args):\n    return check(*args)\n",
+      "rules": "def check(rows, now):\n    return [key for key, due, read in rows if not read and due and due < now]\n"
+    },
+    "reference": {
+      "rules": "def check(rows, now):\n    return [key for key, due, read in rows if not read and due is not None and due <= now]\n"
+    },
+    "fault": {
+      "rules": "def check(rows, now):\n    return [key for key, due, read in rows if not read and due is not None and due < now]\n"
+    },
+    "visible": [
+      [
+        [
+          [
+            [
+              "zero",
+              0,
+              false
+            ]
+          ],
+          2
+        ],
+        [
+          "zero"
+        ]
+      ],
+      [
+        [
+          [
+            [
+              "edge",
+              5,
+              false
+            ]
+          ],
+          5
+        ],
+        [
+          "edge"
+        ]
+      ]
+    ],
+    "hidden": [
+      [
+        [
+          [
+            [
+              "z",
+              0,
+              false
+            ],
+            [
+              "e",
+              1,
+              false
+            ],
+            [
+              "n",
+              null,
+              false
+            ]
+          ],
+          1
+        ],
+        [
+          "z",
+          "e"
+        ]
+      ]
+    ],
+    "regression": [
+      [
+        [
+          [
+            [
+              "old",
+              1,
+              false
+            ],
+            [
+              "seen",
+              1,
+              true
+            ],
+            [
+              "later",
+              9,
+              false
+            ]
+          ],
+          5
+        ],
+        [
+          "old"
+        ]
+      ]
+    ]
+  }
+]

@@ -1,0 +1,32 @@
+# Credentials and local development state
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.DS_Store
+
+# Agent state
+.bear/*
+!.bear/skills/
+.bear/skills/*
+!.bear/skills/code_review/
+.task_outputs/
+.tasks/
+.teams/
+.transcripts/
+
+# Local evaluation outputs and runtime
+eval/.wasi-deps/
+eval/*rerun*.json
+eval/*local*.json
+eval/*results*.json
+eval/*RESULTS*.md

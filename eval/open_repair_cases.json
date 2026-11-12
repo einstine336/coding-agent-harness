@@ -1,0 +1,822 @@
+[
+  {
+    "id": "discount-threshold",
+    "issue": "Billing should apply the percent discount at or above the qualifying subtotal; prices are integer cents. Preserve integer floor rounding.",
+    "entry": "billing",
+    "func": "quote",
+    "files": {
+      "billing": "from policy import eligible\n\ndef quote(subtotal, threshold, percent):\n    if eligible(subtotal, threshold):\n        return subtotal - subtotal * percent // 100\n    return subtotal\n",
+      "policy": "def eligible(subtotal, threshold):\n    return subtotal > threshold\n"
+    },
+    "reference": {
+      "policy": "def eligible(subtotal, threshold):\n    return subtotal >= threshold\n"
+    },
+    "visible": [
+      [
+        [
+          5000,
+          5000,
+          10
+        ],
+        4500
+      ]
+    ],
+    "hidden": [
+      [
+        [
+          299,
+          299,
+          15
+        ],
+        255
+      ],
+      [
+        [
+          1,
+          1,
+          100
+        ],
+        0
+      ]
+    ],
+    "regression": [
+      [
+        [
+          4999,
+          5000,
+          10
+        ],
+        4999
+      ],
+      [
+        [
+          6199,
+          5000,
+          10
+        ],
+        5580
+      ]
+    ]
+  },
+  {
+    "id": "inventory-reservations",
+    "issue": "Return whether a basket can be reserved. Repeated lines for the same SKU must count toward the same available stock. Lines are nonnegative; a missing SKU has no stock.",
+    "entry": "inventory",
+    "func": "can_reserve",
+    "files": {
+      "inventory": "from quantities import totals\n\ndef can_reserve(stock, lines):\n    return all(qty <= stock.get(sku, 0) for sku, qty in totals(lines).items())\n",
+      "quantities": "def totals(lines):\n    return {sku: qty for sku, qty in lines}\n"
+    },
+    "reference": {
+      "quantities": "def totals(lines):\n    result = {}\n    for sku, qty in lines:\n        result[sku] = result.get(sku, 0) + qty\n    return result\n"
+    },
+    "visible": [
+      [
+        [
+          {
+            "a": 3
+          },
+          [
+            [
+              "a",
+              2
+            ],
+            [
+              "a",
+              2
+            ]
+          ]
+        ],
+        false
+      ]
+    ],
+    "hidden": [
+      [
+        [
+          {
+            "a": 4
+          },
+          [
+            [
+              "a",
+              3
+            ],
+            [
+              "a",
+              2
+            ]
+          ]
+        ],
+        false
+      ],
+      [
+        [
+          {
+            "a": 3,
+            "b": 4
+          },
+          [
+            [
+              "a",
+              1
+            ],
+            [
+              "b",
+              4
+            ],
+            [
+              "a",
+              3
+            ]
+          ]
+        ],
+        false
+      ]
+    ],
+    "regression": [
+      [
+        [
+          {
+            "a": 5
+          },
+          [
+            [
+              "a",
+              2
+            ],
+            [
+              "a",
+              3
+            ]
+          ]
+        ],
+        true
+      ],
+      [
+        [
+          {},
+          []
+        ],
+        true
+      ],
+      [
+        [
+          {},
+          [
+            [
+              "missing",
+              1
+            ]
+          ]
+        ],
+        false
+      ]
+    ]
+  },
+  {
+    "id": "pagination-cap",
+    "issue": "A page number is one-based. For positive requested page sizes greater than the API cap, both offset and returned count must use the capped size.",
+    "entry": "listing",
+    "func": "page",
+    "files": {
+      "listing": "from pagination import bounds\n\ndef page(items, number, requested, cap):\n    start, end = bounds(number, requested, cap)\n    return items[start:end]\n",
+      "pagination": "def bounds(number, requested, cap):\n    size = min(requested, cap)\n    start = (number - 1) * requested\n    return start, start + size\n"
+    },
+    "reference": {
+      "pagination": "def bounds(number, requested, cap):\n    size = min(requested, cap)\n    start = (number - 1) * size\n    return start, start + size\n"
+    },
+    "visible": [
+      [
+        [
+          [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          2,
+          5,
+          2
+        ],
+        [
+          2,
+          3
+        ]
+      ]
+    ],
+    "hidden": [
+      [
+        [
+          [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          3,
+          4,
+          2
+        ],
+        [
+          4,
+          5
+        ]
+      ]
+    ],
+    "regression": [
+      [
+        [
+          [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          1,
+          5,
+          2
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      [
+        [
+          [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          2,
+          2,
+          4
+        ],
+        [
+          2,
+          3
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "cache-expiry",
+    "issue": "Cache entries expire exactly at created + ttl; ttl=0 means immediate expiration. The function must return the stored value as-is while it is valid.",
+    "entry": "cache",
+    "func": "get_cached",
+    "files": {
+      "cache": "from clock_rules import valid\n\ndef get_cached(value, created, ttl, now, fallback=None):\n    return value if valid(created, ttl, now) else fallback\n",
+      "clock_rules": "def valid(created, ttl, now):\n    return now <= created + ttl\n"
+    },
+    "reference": {
+      "clock_rules": "def valid(created, ttl, now):\n    return now < created + ttl\n"
+    },
+    "visible": [
+      [
+        [
+          "x",
+          10,
+          4,
+          14,
+          "miss"
+        ],
+        "miss"
+      ]
+    ],
+    "hidden": [
+      [
+        [
+          "x",
+          10,
+          0,
+          10,
+          "miss"
+        ],
+        "miss"
+      ],
+      [
+        [
+          0,
+          50,
+          2,
+          52,
+          99
+        ],
+        99
+      ]
+    ],
+    "regression": [
+      [
+        [
+          false,
+          0,
+          10,
+          9,
+          "miss"
+        ],
+        false
+      ],
+      [
+        [
+          "x",
+          1,
+          4,
+          9
+        ],
+        null
+      ]
+    ]
+  },
+  {
+    "id": "unicode-tags",
+    "issue": "Normalize tags by trimming whitespace and removing empty tags, then deduplicate using Unicode caseless matching while returning the first trimmed spelling in input order.",
+    "entry": "catalog",
+    "func": "clean_tags",
+    "files": {
+      "catalog": "from text_keys import tag_key\n\ndef clean_tags(tags):\n    result, seen = [], set()\n    for raw in tags:\n        tag = raw.strip()\n        key = tag_key(tag)\n        if tag and key not in seen:\n            result.append(tag)\n            seen.add(key)\n    return result\n",
+      "text_keys": "def tag_key(tag):\n    return tag.lower()\n"
+    },
+    "reference": {
+      "text_keys": "def tag_key(tag):\n    return tag.casefold()\n"
+    },
+    "visible": [
+      [
+        [
+          [
+            " Straße ",
+            "STRASSE",
+            "  ",
+            "Book"
+          ]
+        ],
+        [
+          "Straße",
+          "Book"
+        ]
+      ]
+    ],
+    "hidden": [
+      [
+        [
+          [
+            "Σ",
+            "ς",
+            "σ",
+            "Food"
+          ]
+        ],
+        [
+          "Σ",
+          "Food"
+        ]
+      ],
+      [
+        [
+          [
+            "ss",
+            "ß",
+            "SS",
+            "x"
+          ]
+        ],
+        [
+          "ss",
+          "x"
+        ]
+      ]
+    ],
+    "regression": [
+      [
+        [
+          [
+            "Apple",
+            " apple ",
+            "pear"
+          ]
+        ],
+        [
+          "Apple",
+          "pear"
+        ]
+      ],
+      [
+        [
+          []
+        ],
+        []
+      ]
+    ]
+  },
+  {
+    "id": "workflow-terminal",
+    "issue": "Delivered, refunded, and cancelled orders are terminal. A terminal order cannot transition to any other state. A repeat of the same terminal state is allowed as an idempotent operation. Keep all currently supported nonterminal transitions.",
+    "entry": "workflow",
+    "func": "can_move",
+    "files": {
+      "workflow": "from states import ALLOWED, is_terminal\n\ndef can_move(current, target):\n    if is_terminal(current):\n        return current == target\n    return target in ALLOWED.get(current, ())\n",
+      "states": "ALLOWED = {\n    \"open\": (\"paid\", \"cancelled\"), \"paid\": (\"shipped\", \"refunded\"),\n    \"shipped\": (\"delivered\",), \"refunded\": (\"paid\",), \"cancelled\": (\"open\",),\n}\ndef is_terminal(state):\n    return state == \"delivered\"\n"
+    },
+    "reference": {
+      "states": "ALLOWED = {\n    \"open\": (\"paid\", \"cancelled\"), \"paid\": (\"shipped\", \"refunded\"),\n    \"shipped\": (\"delivered\",), \"refunded\": (\"paid\",), \"cancelled\": (\"open\",),\n}\ndef is_terminal(state):\n    return state in {\"delivered\", \"refunded\", \"cancelled\"}\n"
+    },
+    "visible": [
+      [
+        [
+          "refunded",
+          "paid"
+        ],
+        false
+      ]
+    ],
+    "hidden": [
+      [
+        [
+          "cancelled",
+          "open"
+        ],
+        false
+      ],
+      [
+        [
+          "cancelled",
+          "cancelled"
+        ],
+        true
+      ],
+      [
+        [
+          "refunded",
+          "refunded"
+        ],
+        true
+      ]
+    ],
+    "regression": [
+      [
+        [
+          "paid",
+          "refunded"
+        ],
+        true
+      ],
+      [
+        [
+          "open",
+          "shipped"
+        ],
+        false
+      ],
+      [
+        [
+          "delivered",
+          "delivered"
+        ],
+        true
+      ]
+    ]
+  },
+  {
+    "id": "alias-routing",
+    "issue": "Resolve a route by exact name before consulting aliases. An alias may share its spelling with a real route. Missing keys return the given default.",
+    "entry": "routing",
+    "func": "resolve",
+    "files": {
+      "routing": "from route_aliases import route_name\n\ndef resolve(key, routes, aliases, default=None):\n    name = route_name(key, routes, aliases)\n    return routes.get(name, default)\n",
+      "route_aliases": "def route_name(key, routes, aliases):\n    return aliases.get(key, key)\n"
+    },
+    "reference": {
+      "route_aliases": "def route_name(key, routes, aliases):\n    if key in routes:\n        return key\n    return aliases.get(key, key)\n"
+    },
+    "visible": [
+      [
+        [
+          "orders",
+          {
+            "orders": "live",
+            "legacy": "old"
+          },
+          {
+            "orders": "legacy"
+          }
+        ],
+        "live"
+      ]
+    ],
+    "hidden": [
+      [
+        [
+          "x",
+          {
+            "x": false,
+            "y": true
+          },
+          {
+            "x": "y"
+          }
+        ],
+        false
+      ],
+      [
+        [
+          "x",
+          {
+            "x": null,
+            "y": 1
+          },
+          {
+            "x": "y"
+          },
+          9
+        ],
+        null
+      ]
+    ],
+    "regression": [
+      [
+        [
+          "shortcut",
+          {
+            "orders": "live"
+          },
+          {
+            "shortcut": "orders"
+          }
+        ],
+        "live"
+      ],
+      [
+        [
+          "unknown",
+          {},
+          {},
+          404
+        ],
+        404
+      ]
+    ]
+  },
+  {
+    "id": "weighted-average",
+    "issue": "Average only rows with strictly positive weights. Return None when no positive weight remains. A reading of zero is valid.",
+    "entry": "sensors",
+    "func": "average",
+    "files": {
+      "sensors": "from weights import included\n\ndef average(rows):\n    active = included(rows)\n    total = sum(weight for _, weight in active)\n    if not total:\n        return None\n    return sum(reading * weight for reading, weight in active) / total\n",
+      "weights": "def included(rows):\n    return [(reading, weight) for reading, weight in rows if weight]\n"
+    },
+    "reference": {
+      "weights": "def included(rows):\n    return [(reading, weight) for reading, weight in rows if weight > 0]\n"
+    },
+    "visible": [
+      [
+        [
+          [
+            [
+              30,
+              1
+            ],
+            [
+              80,
+              -1
+            ],
+            [
+              10,
+              1
+            ]
+          ]
+        ],
+        20
+      ]
+    ],
+    "hidden": [
+      [
+        [
+          [
+            [
+              7,
+              -3
+            ],
+            [
+              0,
+              0
+            ]
+          ]
+        ],
+        null
+      ],
+      [
+        [
+          [
+            [
+              0,
+              1
+            ],
+            [
+              30,
+              2
+            ],
+            [
+              900,
+              -5
+            ]
+          ]
+        ],
+        20
+      ]
+    ],
+    "regression": [
+      [
+        [
+          [
+            [
+              4,
+              1
+            ],
+            [
+              10,
+              2
+            ],
+            [
+              100,
+              0
+            ]
+          ]
+        ],
+        8
+      ],
+      [
+        [
+          []
+        ],
+        null
+      ]
+    ]
+  },
+  {
+    "id": "refund-cap",
+    "issue": "Process requested refunds in order and cap each approved amount at the outstanding balance. Requests are nonnegative integer cents. Return one approved amount per request.",
+    "entry": "refunds",
+    "func": "approve",
+    "files": {
+      "refunds": "from ledger import approve_one\n\ndef approve(total, requests):\n    remaining = total\n    result = []\n    for requested in requests:\n        amount, remaining = approve_one(requested, remaining)\n        result.append(amount)\n    return result\n",
+      "ledger": "def approve_one(requested, remaining):\n    return requested, remaining - requested\n"
+    },
+    "reference": {
+      "ledger": "def approve_one(requested, remaining):\n    approved = min(requested, remaining)\n    return approved, remaining - approved\n"
+    },
+    "visible": [
+      [
+        [
+          100,
+          [
+            80,
+            40
+          ]
+        ],
+        [
+          80,
+          20
+        ]
+      ]
+    ],
+    "hidden": [
+      [
+        [
+          75,
+          [
+            110,
+            5,
+            0
+          ]
+        ],
+        [
+          75,
+          0,
+          0
+        ]
+      ],
+      [
+        [
+          0,
+          [
+            3,
+            0,
+            4
+          ]
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ]
+    ],
+    "regression": [
+      [
+        [
+          100,
+          [
+            50,
+            0,
+            25
+          ]
+        ],
+        [
+          50,
+          0,
+          25
+        ]
+      ],
+      [
+        [
+          100,
+          []
+        ],
+        []
+      ]
+    ]
+  },
+  {
+    "id": "overnight-window",
+    "issue": "A schedule is start-inclusive and end-exclusive. When end < start the window wraps across midnight. Equal endpoints represent an empty window. Inputs are minutes from 0 to 1439.",
+    "entry": "schedule",
+    "func": "allowed",
+    "files": {
+      "schedule": "from windows import contains\n\ndef allowed(minute, start, end):\n    return contains(minute, start, end)\n",
+      "windows": "def contains(minute, start, end):\n    return start <= minute < end\n"
+    },
+    "reference": {
+      "windows": "def contains(minute, start, end):\n    if end < start:\n        return minute >= start or minute < end\n    return start <= minute < end\n"
+    },
+    "visible": [
+      [
+        [
+          15,
+          1380,
+          60
+        ],
+        true
+      ]
+    ],
+    "hidden": [
+      [
+        [
+          1380,
+          1380,
+          60
+        ],
+        true
+      ]
+    ],
+    "regression": [
+      [
+        [
+          120,
+          120,
+          180
+        ],
+        true
+      ],
+      [
+        [
+          180,
+          120,
+          180
+        ],
+        false
+      ],
+      [
+        [
+          120,
+          120,
+          120
+        ],
+        false
+      ],
+      [
+        [
+          60,
+          1380,
+          60
+        ],
+        false
+      ],
+      [
+        [
+          100,
+          1380,
+          60
+        ],
+        false
+      ]
+    ]
+  }
+]
